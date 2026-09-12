@@ -24,6 +24,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
@@ -39,10 +40,14 @@ import androidx.compose.foundation.layout.aspectRatio
 import app.areada.data.cover.BookCoverRepository
 import app.areada.data.reader.DocumentType
 
+/** Shared hardcover shape: 1 : 1.45 board with a very subtle 3dp radius. */
+internal val HardcoverShape = RoundedCornerShape(3.dp)
+internal const val HARDCOVER_RATIO = 1f / 1.45f
+
 /**
- * Realistic hardcover treatment: rounded board, spine gradient on the left,
- * a page-edge sliver on the right and a soft drop shadow tinted with the
- * artwork's own dominant colour.
+ * Realistic hardcover treatment used for every cover in the app: tight board,
+ * hinge crease 6% in from the left, soft top-left ambient light and a drop
+ * shadow tinted with the artwork's own dominant colour.
  */
 @Composable
 fun PhysicalBookCover(
@@ -50,7 +55,7 @@ fun PhysicalBookCover(
     title: String,
     type: DocumentType,
     modifier: Modifier = Modifier,
-    elevation: Dp = 16.dp,
+    elevation: Dp = 14.dp,
 ) {
     val context = LocalContext.current
     var bitmap by remember(uriString) { mutableStateOf<Bitmap?>(BookCoverRepository.cached(uriString)) }
@@ -69,18 +74,16 @@ fun PhysicalBookCover(
         label = "coverAppear",
     )
 
-    val shape = RoundedCornerShape(topStart = 3.dp, bottomStart = 3.dp, topEnd = 7.dp, bottomEnd = 7.dp)
-
     Box(
         modifier = modifier
-            .aspectRatio(0.66f)
+            .aspectRatio(HARDCOVER_RATIO)
             .shadow(
                 elevation = elevation,
-                shape = shape,
+                shape = HardcoverShape,
                 ambientColor = tint.copy(alpha = 0.9f),
                 spotColor = tint.copy(alpha = 0.9f),
             )
-            .clip(shape)
+            .clip(HardcoverShape)
             .background(MaterialTheme.colorScheme.surfaceVariant),
     ) {
         val image = bitmap
@@ -97,51 +100,68 @@ fun PhysicalBookCover(
             GeneratedCover(title = title, tint = fallbackTint)
         }
 
-        // spine shading
+        // left board edge: dark falls off towards the centre
         Box(
             modifier = Modifier
                 .fillMaxHeight()
-                .fillMaxWidth(0.1f)
+                .fillMaxWidth(0.06f)
                 .background(
                     Brush.horizontalGradient(
                         listOf(
-                            Color.Black.copy(alpha = 0.32f),
-                            Color.Black.copy(alpha = 0.10f),
-                            Color.White.copy(alpha = 0.14f),
+                            Color.Black.copy(alpha = 0.25f),
+                            Color.Black.copy(alpha = 0.08f),
                             Color.Transparent,
                         ),
                     ),
                 ),
         )
 
-        // fore-edge pages
+        // hinge crease line 6% in, with a faint highlight band just right of it
+        Box(
+            modifier = Modifier
+                .fillMaxHeight()
+                .fillMaxWidth(0.16f)
+                .background(
+                    Brush.horizontalGradient(
+                        0.00f to Color.Transparent,
+                        0.36f to Color.Transparent,
+                        0.38f to Color.Black.copy(alpha = 0.15f),
+                        0.40f to Color.White.copy(alpha = 0.10f),
+                        1.00f to Color.Transparent,
+                    ),
+                ),
+        )
+
+        // thin fore-edge page sliver
         Box(
             modifier = Modifier
                 .align(Alignment.CenterEnd)
                 .fillMaxHeight()
-                .width(3.dp)
+                .width(2.dp)
                 .background(
                     Brush.horizontalGradient(
                         listOf(
-                            Color.Black.copy(alpha = 0.16f),
-                            Color.White.copy(alpha = 0.5f),
-                            Color(0x59786E64),
+                            Color.Black.copy(alpha = 0.10f),
+                            Color.White.copy(alpha = 0.38f),
+                            Color(0x40786E64),
                         ),
                     ),
                 ),
         )
 
-        // cover gloss
+        // soft ambient light scattered across the top-left
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .background(
                     Brush.linearGradient(
-                        listOf(
-                            Color.White.copy(alpha = 0.14f),
+                        colors = listOf(
+                            Color.White.copy(alpha = 0.15f),
                             Color.Transparent,
-                            Color.Black.copy(alpha = 0.06f),
+                            Color.Transparent,
                         ),
+                        start = Offset.Zero,
+                        end = Offset.Infinite,
                     ),
                 ),
         )
