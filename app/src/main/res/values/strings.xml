@@ -248,7 +248,8 @@
     <string name="apple_search_placeholder">Title or author</string>
     <string name="apple_no_results">No books match that search.</string>
     <string name="apple_not_started">Not started</string>
-    <string name="apple_percent_read">%1$d%% read</string>
+    <string name="apple_percent_read">%1$d%%</string>
+    <string name="apple_new_badge">NEW</string>
     <string name="apple_continue_reading">Continue reading</string>
     <string name="apple_remove_from_recent">Remove from Reading Now</string>
 </resources>
