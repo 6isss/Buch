@@ -1,6 +1,7 @@
 package app.areada.ui.applebooks
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -48,10 +49,10 @@ fun OpenBookCard(
             .fillMaxWidth()
             .aspectRatio(1.38f)
             .shadow(
-                elevation = 26.dp,
+                elevation = 22.dp,
                 shape = RoundedCornerShape(14.dp),
-                ambientColor = Color(0xFF8A6A4A),
-                spotColor = Color(0xFF6E5237),
+                ambientColor = Color.Black.copy(alpha = 0.18f),
+                spotColor = Color.Black.copy(alpha = 0.22f),
             )
             .clip(RoundedCornerShape(14.dp))
             .background(
@@ -59,6 +60,7 @@ fun OpenBookCard(
                     listOf(Color(0xFF2B2B30), Color(0xFF17171A)),
                 ),
             )
+            .border(1.dp, Color(0xCC262626), RoundedCornerShape(14.dp))
             .clickable(onClick = onClick)
             .padding(horizontal = 12.dp, vertical = 12.dp),
     ) {
@@ -80,19 +82,23 @@ fun OpenBookCard(
             )
         }
 
-        // central spine crease
+        // crisp central seam line
         Box(
             modifier = Modifier
                 .align(Alignment.Center)
                 .fillMaxHeight()
-                .width(22.dp)
+                .width(1.dp)
+                .background(Color.Black.copy(alpha = 0.25f)),
+        )
+
+        // soft light falling in from the top left
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
                 .background(
-                    Brush.horizontalGradient(
+                    Brush.linearGradient(
                         listOf(
-                            Color.Transparent,
-                            Color.Black.copy(alpha = 0.20f),
-                            Color.Black.copy(alpha = 0.38f),
-                            Color.Black.copy(alpha = 0.20f),
+                            Color.White.copy(alpha = 0.10f),
                             Color.Transparent,
                         ),
                     ),
@@ -144,8 +150,8 @@ private fun BookPage(
                     text = text,
                     style = MaterialTheme.typography.bodySmall,
                     fontFamily = FontFamily.Serif,
-                    fontSize = 8.sp,
-                    lineHeight = 13.sp,
+                    fontSize = 6.sp,
+                    lineHeight = 9.sp,
                     color = Color(0xFF2B2B2F),
                     overflow = TextOverflow.Clip,
                     modifier = Modifier
@@ -167,13 +173,21 @@ private fun BookPage(
             modifier = Modifier
                 .align(if (leftHand) Alignment.CenterEnd else Alignment.CenterStart)
                 .fillMaxHeight()
-                .width(26.dp)
+                .width(34.dp)
                 .background(
                     Brush.horizontalGradient(
                         if (leftHand) {
-                            listOf(Color.Transparent, Color.Black.copy(alpha = 0.16f))
+                            listOf(
+                                Color.Transparent,
+                                Color.Black.copy(alpha = 0.05f),
+                                Color.Black.copy(alpha = 0.20f),
+                            )
                         } else {
-                            listOf(Color.Black.copy(alpha = 0.16f), Color.Transparent)
+                            listOf(
+                                Color.Black.copy(alpha = 0.20f),
+                                Color.Black.copy(alpha = 0.05f),
+                                Color.Transparent,
+                            )
                         },
                     ),
                 ),
