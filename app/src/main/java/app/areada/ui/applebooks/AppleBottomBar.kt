@@ -23,7 +23,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
@@ -54,26 +53,13 @@ internal fun AppleBottomBar(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .background(
-                Brush.verticalGradient(
-                    listOf(
-                        scheme.background.copy(alpha = 0.0f),
-                        scheme.background.copy(alpha = 0.86f),
-                        scheme.background.copy(alpha = 0.97f),
-                    ),
-                ),
-            ),
+            .background(scheme.surface.copy(alpha = 0.7f)),
     ) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(12.dp),
-        )
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(0.6.dp)
-                .background(scheme.outline.copy(alpha = 0.6f)),
+                .height(0.5.dp)
+                .background(scheme.outline.copy(alpha = 0.5f)),
         )
         Row(
             modifier = Modifier
