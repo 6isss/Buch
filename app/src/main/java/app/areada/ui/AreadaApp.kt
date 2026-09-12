@@ -43,7 +43,7 @@ import app.areada.data.ZipBookEntry
 import app.areada.data.reader.ReaderLanguageMode
 import app.areada.data.reader.ReaderPreferences
 import app.areada.data.reader.ReaderStateStore
-import app.areada.ui.home.HomeScreen
+import app.areada.ui.applebooks.AppleHome
 import app.areada.ui.reader.AppWindowBackgroundEffect
 import app.areada.ui.reader.EpubReaderScreen
 import app.areada.ui.reader.Fb2ReaderScreen
@@ -195,7 +195,7 @@ fun AreadaApp(
                     .background(appBackground),
             ) {
                 when (val screen = uiState.currentScreen) {
-                    ReaderScreen.Home -> HomeScreen(
+                    ReaderScreen.Home -> AppleHome(
                         roots = uiState.libraryRoots,
                         folderPickerEntries = uiState.libraryFolderPickerEntries,
                         selectedRootUriString = uiState.selectedRootUriString,
