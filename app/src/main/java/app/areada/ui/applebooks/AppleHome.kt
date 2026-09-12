@@ -1,8 +1,17 @@
 package app.areada.ui.applebooks
 
+import android.graphics.BitmapFactory
+import android.net.Uri
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -39,6 +48,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -53,13 +63,18 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import app.areada.R
 import app.areada.data.BookNoteLink
@@ -81,6 +96,8 @@ import app.areada.data.reader.RecentDocument
 import app.areada.ui.home.HomeScreen
 import app.areada.ui.reader.LibraryScrollPosition
 import app.areada.ui.reader.ReaderSettingsSheet
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 /**
  * Apple Books shell: three tabs (Reading Now, Library, Search) over the existing
@@ -305,41 +322,52 @@ private fun ReadingNowTab(
         loadingPreview = false
     }
 
+    val gutter = Modifier.padding(horizontal = 20.dp)
+
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = 20.dp),
+            .verticalScroll(rememberScrollState()),
     ) {
-        AppleHeader(
-            title = stringResource(R.string.apple_reading_now),
-            onProfileClick = onOpenSettings,
-        )
+        Box(modifier = gutter) {
+            AppleHeader(
+                title = stringResource(R.string.apple_reading_now),
+                onProfileClick = onOpenSettings,
+            )
+        }
 
         Spacer(modifier = Modifier.height(22.dp))
 
         if (current == null) {
-            EmptyState(
-                message = stringResource(R.string.apple_no_reading),
-                actionLabel = stringResource(R.string.apple_open_file),
-                onAction = onOpenFile,
-                secondaryLabel = stringResource(R.string.apple_collections),
-                onSecondary = onBrowse,
-            )
+            Box(modifier = gutter) {
+                EmptyState(
+                    message = stringResource(R.string.apple_no_reading),
+                    actionLabel = stringResource(R.string.apple_open_file),
+                    onAction = onOpenFile,
+                    secondaryLabel = stringResource(R.string.apple_collections),
+                    onSecondary = onBrowse,
+                )
+            }
         } else {
             OpenBookCard(
                 previewText = previewText,
                 loading = loadingPreview,
+                modifier = gutter,
                 onClick = { onOpenRecent(current) },
             )
 
             Spacer(modifier = Modifier.height(14.dp))
 
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            Row(
+                modifier = gutter,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = current.title,
-                        style = MaterialTheme.typography.titleLarge,
+                        text = current.title.substringBeforeLast('.'),
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.Normal,
+                        fontSize = 12.sp,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
                     )
@@ -356,7 +384,10 @@ private fun ReadingNowTab(
             }
 
             Spacer(modifier = Modifier.height(26.dp))
-            HorizontalDivider(color = MaterialTheme.colorScheme.outline)
+            HorizontalDivider(
+                modifier = gutter,
+                color = MaterialTheme.colorScheme.outline,
+            )
             Spacer(modifier = Modifier.height(14.dp))
 
             Text(
@@ -365,6 +396,7 @@ private fun ReadingNowTab(
                 fontWeight = FontWeight.Bold,
                 fontSize = 12.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = gutter,
             )
 
             Spacer(modifier = Modifier.height(14.dp))
@@ -375,11 +407,14 @@ private fun ReadingNowTab(
                     text = stringResource(R.string.apple_recently_opened_empty),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = gutter,
                 )
             } else {
+                // full-bleed carousel: covers run off both screen edges
                 LazyRow(
+                    modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(18.dp),
-                    contentPadding = PaddingValues(vertical = 6.dp),
+                    contentPadding = PaddingValues(horizontal = 20.dp, vertical = 6.dp),
                 ) {
                     items(rest, key = { recent -> recent.uriString }) { recent ->
                         Column(modifier = Modifier.width(104.dp)) {
@@ -392,12 +427,7 @@ private fun ReadingNowTab(
                                     .clickable { onOpenRecent(recent) },
                             )
                             Spacer(modifier = Modifier.height(8.dp))
-                            Text(
-                                text = progressLabel(progressByUri[recent.uriString]),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                maxLines = 1,
-                            )
+                            ProgressLine(progress = progressByUri[recent.uriString])
                         }
                     }
                 }
@@ -441,7 +471,7 @@ private fun LibraryTab(
             },
         )
 
-        Spacer(modifier = Modifier.height(6.dp))
+        Spacer(modifier = Modifier.height(8.dp))
 
         Row(
             modifier = Modifier
@@ -478,34 +508,31 @@ private fun LibraryTab(
             )
         } else {
             LazyVerticalGrid(
-            columns = GridCells.Fixed(2),
-            horizontalArrangement = Arrangement.spacedBy(26.dp),
-            verticalArrangement = Arrangement.spacedBy(26.dp),
-            contentPadding = PaddingValues(top = 22.dp, bottom = 40.dp),
-        ) {
-            items(books, key = { book -> book.id }) { book ->
-                Column {
-                    PhysicalBookCover(
-                        uriString = book.uriString,
-                        title = book.title,
-                        type = book.type,
-                        elevation = 18.dp,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { onOpenBook(book) },
-                    )
-                    Spacer(modifier = Modifier.height(9.dp))
-                    Text(
-                        text = book.title.substringBeforeLast('.'),
-                        style = MaterialTheme.typography.bodyMedium,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                    Text(
-                        text = progressLabel(progressByUri[book.uriString]),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
+                columns = GridCells.Fixed(2),
+                horizontalArrangement = Arrangement.spacedBy(30.dp),
+                verticalArrangement = Arrangement.spacedBy(26.dp),
+                contentPadding = PaddingValues(top = 22.dp, bottom = 40.dp),
+            ) {
+                items(books, key = { book -> book.id }) { book ->
+                    Column {
+                        PhysicalBookCover(
+                            uriString = book.uriString,
+                            title = book.title,
+                            type = book.type,
+                            elevation = 16.dp,
+                            modifier = Modifier
+                                .fillMaxWidth(0.88f)
+                                .clickable { onOpenBook(book) },
+                        )
+                        Spacer(modifier = Modifier.height(9.dp))
+                        Text(
+                            text = book.title.substringBeforeLast('.'),
+                            style = MaterialTheme.typography.bodyMedium,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        ProgressLine(progress = progressByUri[book.uriString])
                     }
                 }
             }
@@ -525,15 +552,24 @@ private fun SearchTab(
     onOpenResult: (LibrarySearchResult) -> Unit,
 ) {
     val keyboard = LocalSoftwareKeyboardController.current
+    val focusManager = LocalFocusManager.current
+    val dismissInteraction = remember { MutableInteractionSource() }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .clickable(
+                interactionSource = dismissInteraction,
+                indication = null,
+            ) {
+                focusManager.clearFocus()
+                keyboard?.hide()
+            }
             .padding(horizontal = 20.dp),
     ) {
         AppleHeader(title = stringResource(R.string.apple_search))
 
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(modifier = Modifier.height(22.dp))
 
         OutlinedTextField(
             value = query,
@@ -546,6 +582,11 @@ private fun SearchTab(
             placeholder = { Text(text = stringResource(R.string.apple_search_placeholder)) },
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
             keyboardActions = KeyboardActions(onSearch = { keyboard?.hide() }),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = Color.Black.copy(alpha = 0.30f),
+                unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                cursorColor = MaterialTheme.colorScheme.onBackground,
+            ),
             modifier = Modifier.fillMaxWidth(),
         )
 
@@ -574,9 +615,9 @@ private fun SearchTab(
                         uriString = result.uriString.orEmpty(),
                         title = result.title,
                         type = result.documentType ?: DocumentType.TXT,
-                        elevation = 18.dp,
+                        elevation = 16.dp,
                         modifier = Modifier
-                            .fillMaxWidth()
+                            .fillMaxWidth(0.88f)
                             .clickable { onOpenResult(result) },
                     )
                     Spacer(modifier = Modifier.height(9.dp))
@@ -624,24 +665,105 @@ private fun AppleHeader(
             trailing?.invoke()
             if (onProfileClick != null) {
                 Spacer(modifier = Modifier.width(6.dp))
-                Box(
-                    modifier = Modifier
-                        .size(36.dp)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.surfaceVariant)
-                        .clickable(onClick = onProfileClick),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Icon(
-                        imageVector = Icons.Outlined.Person,
-                        contentDescription = stringResource(R.string.apple_settings),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(21.dp),
-                    )
-                }
+                ProfileAvatar(onClick = onProfileClick)
             }
         }
         HorizontalDivider(color = MaterialTheme.colorScheme.outline)
+    }
+}
+
+/** Circular profile button: tap opens settings, long press picks a photo. */
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun ProfileAvatar(onClick: () -> Unit) {
+    val context = LocalContext.current
+    var uriString by remember { mutableStateOf(AvatarStore.get(context)) }
+    var bitmap by remember { mutableStateOf<ImageBitmap?>(null) }
+
+    val picker = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickVisualMedia(),
+    ) { picked ->
+        if (picked != null) {
+            AvatarStore.set(context, picked)
+            uriString = picked.toString()
+        }
+    }
+
+    LaunchedEffect(uriString) {
+        val value = uriString
+        bitmap = if (value == null) {
+            null
+        } else {
+            withContext(Dispatchers.IO) {
+                runCatching {
+                    context.contentResolver.openInputStream(Uri.parse(value))?.use { input ->
+                        BitmapFactory.decodeStream(input)?.asImageBitmap()
+                    }
+                }.getOrNull()
+            }
+        }
+    }
+
+    Box(
+        modifier = Modifier
+            .size(36.dp)
+            .clip(CircleShape)
+            .background(MaterialTheme.colorScheme.surfaceVariant)
+            .combinedClickable(
+                onClick = onClick,
+                onLongClick = {
+                    picker.launch(
+                        PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly),
+                    )
+                },
+            ),
+        contentAlignment = Alignment.Center,
+    ) {
+        val image = bitmap
+        if (image != null) {
+            Image(
+                bitmap = image,
+                contentDescription = stringResource(R.string.apple_settings),
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize(),
+            )
+        } else {
+            Icon(
+                imageVector = Icons.Outlined.Person,
+                contentDescription = stringResource(R.string.apple_settings),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(21.dp),
+            )
+        }
+    }
+}
+
+/** Percent read, or a blue "NEW" pill for books that were never opened. */
+@Composable
+private fun ProgressLine(progress: ReadingProgress?) {
+    val percent = progressPercent(progress)
+    if (percent == null) {
+        Box(
+            modifier = Modifier
+                .clip(CircleShape)
+                .background(Color(0xFF0040A8))
+                .padding(horizontal = 8.dp, vertical = 2.dp),
+        ) {
+            Text(
+                text = stringResource(R.string.apple_new_badge),
+                color = Color.White,
+                fontSize = 10.sp,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 0.08.em,
+            )
+        }
+    } else {
+        Text(
+            text = stringResource(R.string.apple_percent_read, percent),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+        )
     }
 }
 
