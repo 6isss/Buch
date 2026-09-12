@@ -46,7 +46,7 @@ internal fun AppleTab.icon(): ImageVector = when (this) {
 @Composable
 internal fun AppleBottomBar(
     selected: AppleTab,
-    labels: (AppleTab) -> String,
+    labels: @Composable (AppleTab) -> String,
     onSelect: (AppleTab) -> Unit,
 ) {
     val scheme = MaterialTheme.colorScheme
