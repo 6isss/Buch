@@ -77,6 +77,24 @@ internal fun scrollByWebView(webView: WebView, deltaX: Int, deltaY: Int) {
     webView.scrollBy(deltaX, deltaY)
 }
 
+internal fun restorePaginatedPosition(webView: WebView, fraction: Float) {
+    val clean = fraction.coerceIn(0f, 1f)
+    val run = {
+        webView.evaluateJavascript(
+            "if(window.areadaGoToFraction){window.areadaGoToFraction($clean);}",
+            null,
+        )
+    }
+    run()
+    webView.postDelayed(run, 120L)
+    webView.postDelayed(run, 420L)
+}
+
+internal fun turnPaginatedPage(webView: WebView, forward: Boolean) {
+    val call = if (forward) "window.areadaNextPage" else "window.areadaPrevPage"
+    webView.evaluateJavascript("if($call){$call();}", null)
+}
+
 internal class NoteBridge(
     private val onNoteOpen: (String) -> Unit,
 ) {

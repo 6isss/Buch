@@ -40,6 +40,9 @@
     <string name="orientation_landscape">Landscape</string>
     <string name="orientation_follow_system">Follow System</string>
     <string name="page_navigation">Page Navigation</string>
+    <string name="page_turning_mode">Page Turning Mode</string>
+    <string name="page_turn_horizontal">Horizontal Swipe</string>
+    <string name="page_turn_vertical">Vertical Scroll</string>
     <string name="navigation_swipe">Swipe</string>
     <string name="navigation_tap">Tap</string>
     <string name="navigation_buttons">Buttons</string>

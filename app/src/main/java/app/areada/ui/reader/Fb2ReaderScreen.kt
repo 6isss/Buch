@@ -36,6 +36,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import app.areada.R
 import app.areada.data.reader.ReaderNavigationMode
+import app.areada.data.reader.ReaderPageTurnMode
 import app.areada.data.reader.ReaderPreferences
 
 import app.areada.data.reader.ReadingBookmark
@@ -99,6 +100,7 @@ internal fun Fb2ReaderScreen(
             fontSizeSp = preferences.fontSizeSp,
             lineSpacingBucket = (preferences.lineSpacing * 100f).roundToInt(),
             scrollToEnd = preferences.openPreviousChapterAtEnd,
+            pageTurnMode = ReaderPageTurnMode.VERTICAL_SCROLL,
         )
     }
     var scrollFraction by rememberSaveable(screen.document.uriString) {
