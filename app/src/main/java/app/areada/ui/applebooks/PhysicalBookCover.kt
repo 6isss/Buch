@@ -57,7 +57,7 @@ fun PhysicalBookCover(
     title: String,
     type: DocumentType,
     modifier: Modifier = Modifier,
-    elevation: Dp = 16.dp,
+    elevation: Dp = 22.dp,
 ) {
     val context = LocalContext.current
     var bitmap by remember(uriString) { mutableStateOf<Bitmap?>(BookCoverRepository.cached(uriString)) }
@@ -83,8 +83,8 @@ fun PhysicalBookCover(
                 .shadow(
                     elevation = elevation,
                     shape = HardcoverShape,
-                    ambientColor = tint.copy(alpha = 0.55f),
-                    spotColor = tint.copy(alpha = 0.85f),
+                    ambientColor = tint.copy(alpha = 0.77f),
+                    spotColor = tint.copy(alpha = 1f),
                 )
                 .clip(HardcoverShape)
                 .background(MaterialTheme.colorScheme.surfaceVariant),

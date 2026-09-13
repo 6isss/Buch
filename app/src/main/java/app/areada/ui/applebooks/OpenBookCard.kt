@@ -63,9 +63,9 @@ fun OpenBookCard(
                     listOf(Color(0xFF2B2B30), Color(0xFF17171A)),
                 ),
             )
-            .border(0.35.dp, Color(0xCC262626), HeroFrameShape)
+            .border(1.5.dp, Color(0xCC1A1A1A), HeroFrameShape)
             .clickable(onClick = onClick)
-            .padding(horizontal = 15.dp, vertical = 9.dp),
+            .padding(horizontal = 18.dp, vertical = 8.dp),
     ) {
         Row(modifier = Modifier.fillMaxSize()) {
             BookPage(
