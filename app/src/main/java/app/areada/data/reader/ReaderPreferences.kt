@@ -38,6 +38,14 @@ enum class ReaderNavigationMode(val label: String) {
 fun readerNavigationModeFromName(name: String?): ReaderNavigationMode =
     ReaderNavigationMode.entries.firstOrNull { mode -> mode.name == name } ?: ReaderNavigationMode.SWIPE
 
+enum class ReaderPageTurnEffect(val label: String) {
+    CURL("Curl"),
+    NONE("None"),
+}
+
+fun readerPageTurnEffectFromName(name: String?): ReaderPageTurnEffect =
+    ReaderPageTurnEffect.entries.firstOrNull { effect -> effect.name == name } ?: ReaderPageTurnEffect.CURL
+
 enum class ReaderButtonLayout(val label: String) {
     DEFAULT("< v ^ >"),
     INVERTED("> ^ v <"),
@@ -75,6 +83,7 @@ data class ReaderPreferences(
     val languageMode: ReaderLanguageMode = ReaderLanguageMode.System,
     val orientationMode: ReaderOrientationMode = ReaderOrientationMode.FollowSystem,
     val navigationMode: ReaderNavigationMode = ReaderNavigationMode.SWIPE,
+    val pageTurnEffect: ReaderPageTurnEffect = ReaderPageTurnEffect.CURL,
     val fontSizeSp: Int = 18,
     val lineSpacing: Float = 1.7f,
     val keepScreenOn: Boolean = false,

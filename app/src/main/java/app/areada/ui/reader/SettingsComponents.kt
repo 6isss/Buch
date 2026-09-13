@@ -37,6 +37,7 @@ import app.areada.R
 import app.areada.data.reader.ReaderFontChoice
 import app.areada.data.reader.ReaderLanguageMode
 import app.areada.data.reader.ReaderNavigationMode
+import app.areada.data.reader.ReaderPageTurnEffect
 import app.areada.data.reader.ReaderOrientationMode
 import app.areada.data.reader.ReaderThemeMode
 
@@ -372,6 +373,13 @@ internal fun ReaderLanguageMode.displayLabel(): String =
         ReaderLanguageMode.Nepali -> stringResource(R.string.language_nepali)
         ReaderLanguageMode.PortugueseBrazil -> stringResource(R.string.language_portuguese_brazil)
         ReaderLanguageMode.ChineseSimplified -> stringResource(R.string.language_zhcn)
+    }
+
+@Composable
+internal fun ReaderPageTurnEffect.displayLabel(): String =
+    when (this) {
+        ReaderPageTurnEffect.CURL -> stringResource(R.string.page_turn_effect_curl)
+        ReaderPageTurnEffect.NONE -> stringResource(R.string.page_turn_effect_none)
     }
 
 @Composable

@@ -53,6 +53,7 @@ object ReaderStateStore {
                     languageMode = readerLanguageModeFromName(item.optString("languageMode")),
                     orientationMode = readerOrientationModeFromName(item.optString("orientationMode")),
                     navigationMode = readerNavigationModeFromName(item.optString("navigationMode")),
+                    pageTurnEffect = readerPageTurnEffectFromName(item.optString("pageTurnEffect")),
                     fontSizeSp = item.optInt("fontSizeSp", ReaderPreferences().fontSizeSp),
                     lineSpacing = item.optDouble("lineSpacing", ReaderPreferences().lineSpacing.toDouble())
                         .toFloat(),
@@ -95,6 +96,7 @@ object ReaderStateStore {
             put("languageMode", preferences.languageMode.name)
             put("orientationMode", preferences.orientationMode.name)
             put("navigationMode", preferences.navigationMode.name)
+            put("pageTurnEffect", preferences.pageTurnEffect.name)
             put("fontSizeSp", preferences.fontSizeSp)
             put("lineSpacing", preferences.lineSpacing.toDouble())
             put("keepScreenOn", preferences.keepScreenOn)

@@ -65,6 +65,7 @@ dependencies {
     implementation("org.jsoup:jsoup:1.22.2")
     implementation("org.apache.commons:commons-compress:1.27.1")
     implementation("org.tukaani:xz:1.10")
+    implementation(project(":karackencurl"))
 
     implementation(composeBom)
     androidTestImplementation(composeBom)

@@ -2,9 +2,12 @@ package app.areada.ui.reader
 
 import android.graphics.Color as AndroidColor
 import android.annotation.SuppressLint
+import android.graphics.Bitmap
 import android.net.Uri
+import android.webkit.WebView
 import android.os.SystemClock
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -31,6 +34,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
@@ -39,6 +44,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import app.areada.R
 import app.areada.data.reader.ReaderNavigationMode
+import app.areada.data.reader.ReaderPageTurnEffect
 import app.areada.data.reader.ReaderPreferences
 
 import app.areada.data.reader.ReadingBookmark
@@ -201,6 +207,25 @@ internal fun EpubReaderScreen(
 
     val hapticFeedback = LocalHapticFeedback.current
 
+    var readerWebView by remember(screen.document.uriString) { mutableStateOf<WebView?>(null) }
+    var curlCapturedPage by remember(screen.document.uriString) { mutableStateOf<Bitmap?>(null) }
+    var curlForward by remember(screen.document.uriString) { mutableStateOf(true) }
+    var curlFrames by remember(screen.document.uriString) { mutableStateOf<CurlTurnFrames?>(null) }
+    var curlDisabled by remember(screen.document.uriString) { mutableStateOf(false) }
+    var curlGeneration by remember(screen.document.uriString) { mutableStateOf(0L) }
+
+    fun beginCurlTurn(forward: Boolean) {
+        if (preferences.pageTurnEffect != ReaderPageTurnEffect.CURL || curlDisabled) {
+            return
+        }
+        if (curlCapturedPage != null || curlFrames != null) {
+            return
+        }
+        val view = readerWebView ?: return
+        curlForward = forward
+        curlCapturedPage = captureReaderBitmap(view)
+    }
+
     fun goToPreviousChapter() {
         if (chapterIndex <= 0) {
             return
@@ -208,6 +233,7 @@ internal fun EpubReaderScreen(
         if (preferences.vibrateOnPageTurn) {
             hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
         }
+        beginCurlTurn(forward = false)
         switchToChapter(chapterIndex - 1)
     }
 
@@ -218,7 +244,27 @@ internal fun EpubReaderScreen(
         if (preferences.vibrateOnPageTurn) {
             hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
         }
+        beginCurlTurn(forward = true)
         switchToChapter(chapterIndex + 1)
+    }
+
+    LaunchedEffect(curlCapturedPage, renderedChapter, chapterIndex) {
+        val leaving = curlCapturedPage ?: return@LaunchedEffect
+        if (renderedChapter == null) {
+            return@LaunchedEffect
+        }
+        delay(280L)
+        val landing = readerWebView?.let { view -> captureReaderBitmap(view) }
+        if (landing != null) {
+            curlGeneration += 1L
+            curlFrames = CurlTurnFrames(
+                generationId = curlGeneration,
+                from = leaving,
+                to = landing,
+                forward = curlForward,
+            )
+        }
+        curlCapturedPage = null
     }
 
     fun scrubCurrentSection(progress: Float) {
@@ -432,6 +478,7 @@ internal fun EpubReaderScreen(
                             onNoteOpen = { note ->
                                 noteText = note
                             },
+                            onWebViewReady = { view -> readerWebView = view },
                             scrollEventId = scrollEventCounter,
                             scrollEventPixels = scrollEventPixels,
                             searchQuery = chapterSearchQuery,
@@ -443,6 +490,36 @@ internal fun EpubReaderScreen(
                             },
                         )
                     }
+                }
+            }
+
+            val curlStill = curlCapturedPage ?: curlFrames?.from
+            if (curlStill != null) {
+                Image(
+                    bitmap = curlStill.asImageBitmap(),
+                    contentDescription = null,
+                    contentScale = ContentScale.FillBounds,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .navigationBarsPadding()
+                        .zIndex(1f),
+                )
+            }
+            curlFrames?.let { frames ->
+                key(frames.generationId) {
+                    CurlPageTurnOverlay(
+                        frames = frames,
+                        onFinished = { failed ->
+                            if (failed) {
+                                curlDisabled = true
+                            }
+                            curlFrames = null
+                        },
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .navigationBarsPadding()
+                            .zIndex(1.5f),
+                    )
                 }
             }
 

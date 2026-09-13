@@ -45,6 +45,7 @@ internal fun EpubWebView(
     onOpenLocalHref: (String) -> Boolean,
     onOpenExternalLink: (Uri) -> Unit,
     onNoteOpen: (String) -> Unit,
+    onWebViewReady: (WebView?) -> Unit = {},
     scrollEventId: Int = 0,
     scrollEventPixels: Int = 0,
     searchQuery: String,
@@ -272,6 +273,7 @@ internal fun EpubWebView(
                 }
 
                 tag = chapterSignature
+                onWebViewReady(this)
                 loadDataWithBaseURL(
                     chapter.baseUrl,
                     chapter.html,
@@ -318,6 +320,7 @@ internal fun EpubWebView(
             )
         },
         onRelease = { webView ->
+            onWebViewReady(null)
             webView.stopLoading()
             webView.setFindListener(null)
             webView.setOnTouchListener(null)

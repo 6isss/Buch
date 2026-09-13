@@ -16,3 +16,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "Areada"
 include(":app")
+include(":karackencurl")
