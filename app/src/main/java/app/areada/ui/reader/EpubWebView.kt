@@ -20,14 +20,10 @@ import androidx.compose.ui.viewinterop.AndroidView
 import app.areada.R
 import app.areada.data.reader.ReaderFontChoice
 import app.areada.data.reader.ReaderNavigationMode
-import app.areada.data.reader.ReaderPageTurnMode
 import app.areada.data.reader.ReaderPreferences
 import app.areada.data.reader.ReaderRenderPalette
 import app.areada.data.reader.ReaderThemeMode
 import app.areada.reader.epub.RenderedChapter
-import android.webkit.JavascriptInterface
-import android.os.Handler
-import android.os.Looper
 import java.io.ByteArrayInputStream
 import kotlin.math.abs
 
@@ -37,7 +33,6 @@ internal fun EpubWebView(
     currentChapterFileUrl: String,
     preferences: ReaderPreferences,
     navigationMode: ReaderNavigationMode,
-    pageTurnMode: ReaderPageTurnMode = ReaderPageTurnMode.VERTICAL_SCROLL,
     renderPalette: ReaderRenderPalette,
     initialScrollFraction: Float,
     scrollRequest: EpubScrollRequest?,
@@ -60,7 +55,6 @@ internal fun EpubWebView(
     val backgroundColor = AndroidColor.parseColor(renderPalette.backgroundHex)
     val latestScrollRequest by rememberUpdatedState(scrollRequest)
     val latestNavigationMode by rememberUpdatedState(navigationMode)
-    val paginated = pageTurnMode == ReaderPageTurnMode.HORIZONTAL_SWIPE
     val latestOnScrollProgressChange by rememberUpdatedState(onScrollProgressChange)
     val latestOnScrollabilityChange by rememberUpdatedState(onScrollabilityChange)
     val latestOnReaderTap by rememberUpdatedState(onReaderTap)
@@ -123,25 +117,6 @@ internal fun EpubWebView(
                 settings.displayZoomControls = false
                 settings.setSupportZoom(true)
                 addJavascriptInterface(NoteBridge(openNote), "AreadaNote")
-                if (paginated) {
-                    overScrollMode = View.OVER_SCROLL_NEVER
-                    isVerticalScrollBarEnabled = false
-                    isHorizontalScrollBarEnabled = false
-                    settings.builtInZoomControls = false
-                    settings.setSupportZoom(false)
-                    addJavascriptInterface(
-                        EpubPagerBridge(
-                            onProgress = { progress, pages ->
-                                latestOnScrollProgressChange(progress.coerceIn(0f, 1f))
-                                latestOnScrollabilityChange(pages > 1)
-                            },
-                            onNextChapter = { latestOnSwipeNext() },
-                            onPreviousChapter = { latestOnSwipePrevious() },
-                            onToggleChrome = { latestOnReaderTap() },
-                        ),
-                        "AreadaPager",
-                    )
-                }
                 setFindListener { activeMatchOrdinal, numberOfMatches, isDoneCounting ->
                     if (isDoneCounting) {
                         latestOnSearchResult(
@@ -153,19 +128,12 @@ internal fun EpubWebView(
 
                 webViewClient = object : WebViewClient() {
                     override fun onPageFinished(view: WebView, url: String?) {
-                        if (paginated) {
-                            restorePaginatedPosition(view, initialScrollFraction)
-                            latestScrollRequest?.let { request ->
-                                restorePaginatedPosition(view, request.progress)
-                            }
-                        } else {
-                            restoreWebViewScroll(view, initialScrollFraction)
-                            latestScrollRequest?.let { request ->
-                                applyEpubScrollRequest(view, request.progress)
-                            }
-                            view.postDelayed({ publishScrollState(force = true) }, 170L)
-                            view.postDelayed({ publishScrollState(force = true) }, 360L)
+                        restoreWebViewScroll(view, initialScrollFraction)
+                        latestScrollRequest?.let { request ->
+                            applyEpubScrollRequest(view, request.progress)
                         }
+                        view.postDelayed({ publishScrollState(force = true) }, 170L)
+                        view.postDelayed({ publishScrollState(force = true) }, 360L)
                         injectNoteHandler(view)
                         applyEpubChapterSearch(
                             webView = view,
@@ -221,10 +189,8 @@ internal fun EpubWebView(
                     }
                 }
 
-                if (!paginated) {
-                    setOnScrollChangeListener { _, _, _, _, _ ->
-                        publishScrollState()
-                    }
+                setOnScrollChangeListener { _, _, scrollY, _, _ ->
+                    publishScrollState()
                 }
 
                 val gestureDetector = GestureDetector(
@@ -301,10 +267,8 @@ internal fun EpubWebView(
                     },
                 )
 
-                if (!paginated) {
-                    setOnTouchListener { _, event ->
-                        gestureDetector.onTouchEvent(event)
-                    }
+                setOnTouchListener { _, event ->
+                    gestureDetector.onTouchEvent(event)
                 }
 
                 tag = chapterSignature
@@ -327,34 +291,22 @@ internal fun EpubWebView(
                     "utf-8",
                     null,
                 )
-                if (paginated) {
-                    webView.postDelayed({ restorePaginatedPosition(webView, initialScrollFraction) }, 220L)
-                } else {
-                    webView.post { restoreWebViewScroll(webView, initialScrollFraction) }
-                    webView.postDelayed({ restoreWebViewScroll(webView, initialScrollFraction) }, 180L)
-                }
+                webView.post { restoreWebViewScroll(webView, initialScrollFraction) }
+                webView.postDelayed({ restoreWebViewScroll(webView, initialScrollFraction) }, 180L)
             }
 
             scrollRequest?.let { request ->
                 val previousRequestId = webView.getTag(R.id.tag_epub_scroll_request_id) as? Int
                 if (previousRequestId != request.id) {
                     webView.setTag(R.id.tag_epub_scroll_request_id, request.id)
-                    if (paginated) {
-                        restorePaginatedPosition(webView, request.progress)
-                    } else {
-                        applyEpubScrollRequest(webView, request.progress)
-                    }
+                    applyEpubScrollRequest(webView, request.progress)
                 }
             }
             if (latestScrollEventId != 0) {
                 val previousEventId = webView.getTag(R.id.tag_epub_scroll_event_id) as? Int
                 if (previousEventId != latestScrollEventId) {
                     webView.setTag(R.id.tag_epub_scroll_event_id, latestScrollEventId)
-                    if (paginated) {
-                        webView.post { turnPaginatedPage(webView, forward = latestScrollEventPixels > 0) }
-                    } else {
-                        webView.post { scrollByWebView(webView, 0, latestScrollEventPixels) }
-                    }
+                    webView.post { scrollByWebView(webView, 0, latestScrollEventPixels) }
                 }
             }
             applyEpubChapterSearch(
@@ -372,7 +324,6 @@ internal fun EpubWebView(
             webView.setOnScrollChangeListener(null)
             webView.webViewClient = WebViewClient()
             runCatching { webView.removeJavascriptInterface("AreadaNote") }
-            runCatching { webView.removeJavascriptInterface("AreadaPager") }
             webView.destroy()
         },
         modifier = modifier.fillMaxSize(),
@@ -396,7 +347,6 @@ internal data class EpubRenderCacheKey(
     val fontSizeSp: Int,
     val lineSpacingBucket: Int,
     val scrollToEnd: Boolean,
-    val pageTurnMode: ReaderPageTurnMode = ReaderPageTurnMode.HORIZONTAL_SWIPE,
 )
 
 internal fun trimEpubRenderCache(
@@ -441,33 +391,4 @@ internal fun applyEpubChapterSearch(
     }
 
     webView.setTag(R.id.tag_epub_search_state, EpubSearchViewState(cleanQuery, request))
-}
-
-internal class EpubPagerBridge(
-    private val onProgress: (Float, Int) -> Unit,
-    private val onNextChapter: () -> Unit,
-    private val onPreviousChapter: () -> Unit,
-    private val onToggleChrome: () -> Unit,
-) {
-    private val mainHandler = Handler(Looper.getMainLooper())
-
-    @JavascriptInterface
-    fun progress(fraction: Float, pageCount: Int) {
-        mainHandler.post { onProgress(fraction, pageCount) }
-    }
-
-    @JavascriptInterface
-    fun nextChapter() {
-        mainHandler.post(onNextChapter)
-    }
-
-    @JavascriptInterface
-    fun prevChapter() {
-        mainHandler.post(onPreviousChapter)
-    }
-
-    @JavascriptInterface
-    fun toggleChrome() {
-        mainHandler.post(onToggleChrome)
-    }
 }

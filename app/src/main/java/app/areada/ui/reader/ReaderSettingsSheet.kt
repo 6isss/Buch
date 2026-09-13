@@ -48,7 +48,6 @@ import app.areada.R
 import app.areada.data.reader.ReaderButtonLayout
 import app.areada.data.reader.ReaderFontChoice
 import app.areada.data.reader.ReaderNavigationMode
-import app.areada.data.reader.ReaderPageTurnMode
 import app.areada.data.reader.ReaderOrientationMode
 import app.areada.data.reader.ReaderPreferences
 import app.areada.data.reader.ReaderRulerPositionMax
@@ -231,17 +230,6 @@ internal fun ReaderSettingsSheet(
                     valueRange = 1.2f..2.4f,
                     steps = 11,
                 )
-                SettingsControlSpacer()
-                SettingsSection(title = stringResource(R.string.page_turning_mode)) {
-                    SegmentedSettingGrid(
-                        items = ReaderPageTurnMode.entries,
-                        selected = preferences.pageTurnMode,
-                        label = { mode -> mode.displayLabel() },
-                        onSelect = { mode ->
-                            onPreferencesChange(preferences.copy(pageTurnMode = mode))
-                        },
-                    )
-                }
                 SettingsControlSpacer()
                 SettingsSection(title = stringResource(R.string.page_navigation)) {
                     SegmentedSettingGrid(

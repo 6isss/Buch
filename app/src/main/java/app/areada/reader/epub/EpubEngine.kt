@@ -4,7 +4,6 @@ import android.content.Context
 import android.net.Uri
 import android.util.Log
 import app.areada.data.AreadaCacheManager
-import app.areada.data.reader.ReaderPageTurnMode
 import app.areada.data.reader.ReaderPreferences
 import app.areada.data.reader.ReaderRenderPalette
 import app.areada.data.reader.renderPalette
@@ -298,51 +297,7 @@ object EpubEngine {
             }
             """.trimIndent(),
         )
-        if (preferences.pageTurnMode == ReaderPageTurnMode.HORIZONTAL_SWIPE) {
-            head.appendElement("style").appendText(
-                """
-                html, body {
-                  height: 100% !important;
-                  overflow: hidden !important;
-                  overscroll-behavior: none;
-                  touch-action: pan-x;
-                  -webkit-user-select: none;
-                  user-select: none;
-                  -webkit-tap-highlight-color: transparent;
-                }
-                body {
-                  padding: 0 !important;
-                  position: relative;
-                }
-                #areada-pager {
-                  position: absolute;
-                  box-sizing: border-box;
-                  column-gap: 0;
-                  -webkit-column-gap: 0;
-                  column-fill: auto;
-                  -webkit-column-fill: auto;
-                  will-change: transform;
-                  transform: translate3d(0, 0, 0);
-                  backface-visibility: hidden;
-                }
-                #areada-pager img,
-                #areada-pager svg,
-                #areada-pager video,
-                #areada-pager figure,
-                #areada-pager picture {
-                  max-height: 68vh !important;
-                }
-                #areada-pager pre,
-                #areada-pager blockquote,
-                #areada-pager table {
-                  overflow: hidden;
-                }
-                ::-webkit-scrollbar { width: 0; height: 0; }
-                """.trimIndent(),
-            )
-            renderedDocument.body().appendElement("script").appendText(EpubPagerScript)
-        }
-        if (scrollToEnd && preferences.pageTurnMode != ReaderPageTurnMode.HORIZONTAL_SWIPE) {
+        if (scrollToEnd) {
             renderedDocument.body().appendElement("script").appendText(
                 "window.scrollTo(0,document.body.scrollHeight)",
             )

@@ -167,7 +167,6 @@ internal fun EpubReaderScreen(
         preferences.fontSizeSp,
         preferences.lineSpacing,
         preferences.openPreviousChapterAtEnd,
-        preferences.pageTurnMode,
     ) {
         EpubRenderCacheKey(
             chapterIndex = chapterIndex,
@@ -176,7 +175,6 @@ internal fun EpubReaderScreen(
             fontSizeSp = preferences.fontSizeSp,
             lineSpacingBucket = (preferences.lineSpacing * 100f).roundToInt(),
             scrollToEnd = preferences.openPreviousChapterAtEnd,
-            pageTurnMode = preferences.pageTurnMode,
         )
     }
 
@@ -402,7 +400,6 @@ internal fun EpubReaderScreen(
                                 currentChapterFileUrl = screen.book.chapters[chapterIndex].file.toURI().toString(),
                                 preferences = preferences,
                                 navigationMode = preferences.navigationMode,
-                                pageTurnMode = preferences.pageTurnMode,
                                 renderPalette = renderPalette,
                             initialScrollFraction = scrollFraction,
                             scrollRequest = sectionScrollRequest,

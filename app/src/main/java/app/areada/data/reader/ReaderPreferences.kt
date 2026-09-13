@@ -38,14 +38,6 @@ enum class ReaderNavigationMode(val label: String) {
 fun readerNavigationModeFromName(name: String?): ReaderNavigationMode =
     ReaderNavigationMode.entries.firstOrNull { mode -> mode.name == name } ?: ReaderNavigationMode.SWIPE
 
-enum class ReaderPageTurnMode(val label: String) {
-    HORIZONTAL_SWIPE("Horizontal Swipe"),
-    VERTICAL_SCROLL("Vertical Scroll"),
-}
-
-fun readerPageTurnModeFromName(name: String?): ReaderPageTurnMode =
-    ReaderPageTurnMode.entries.firstOrNull { mode -> mode.name == name } ?: ReaderPageTurnMode.HORIZONTAL_SWIPE
-
 enum class ReaderButtonLayout(val label: String) {
     DEFAULT("< v ^ >"),
     INVERTED("> ^ v <"),
@@ -83,7 +75,6 @@ data class ReaderPreferences(
     val languageMode: ReaderLanguageMode = ReaderLanguageMode.System,
     val orientationMode: ReaderOrientationMode = ReaderOrientationMode.FollowSystem,
     val navigationMode: ReaderNavigationMode = ReaderNavigationMode.SWIPE,
-    val pageTurnMode: ReaderPageTurnMode = ReaderPageTurnMode.HORIZONTAL_SWIPE,
     val fontSizeSp: Int = 18,
     val lineSpacing: Float = 1.7f,
     val keepScreenOn: Boolean = false,
