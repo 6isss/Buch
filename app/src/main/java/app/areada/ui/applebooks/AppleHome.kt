@@ -6,6 +6,12 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -248,7 +254,16 @@ internal fun AppleHome(
                     .fillMaxSize()
                     .padding(bottom = padding.calculateBottomPadding()),
             ) {
-                when (tab) {
+                AnimatedContent(
+                    targetState = tab,
+                    transitionSpec = {
+                        (fadeIn(animationSpec = tween(200)) +
+                            scaleIn(initialScale = 0.95f, animationSpec = tween(200)))
+                            .togetherWith(fadeOut(animationSpec = tween(140)))
+                    },
+                    label = "appleTab",
+                ) { current ->
+                when (current) {
                     AppleTab.ReadingNow -> ReadingNowTab(
                         recents = recents,
                         progressByUri = progressByUri,
@@ -276,6 +291,7 @@ internal fun AppleHome(
                         onQueryChange = onSearchQueryChange,
                         onOpenResult = onOpenSearchResult,
                     )
+                }
                 }
             }
         }
@@ -366,7 +382,7 @@ private fun ReadingNowTab(
                     Text(
                         text = current.title.substringBeforeLast('.'),
                         style = MaterialTheme.typography.labelLarge,
-                        fontWeight = FontWeight.Normal,
+                        fontWeight = FontWeight.Bold,
                         fontSize = 12.sp,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
@@ -395,6 +411,7 @@ private fun ReadingNowTab(
                 style = MaterialTheme.typography.labelLarge,
                 fontWeight = FontWeight.Bold,
                 fontSize = 12.sp,
+                letterSpacing = 0.165.em,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = gutter,
             )
@@ -509,19 +526,19 @@ private fun LibraryTab(
         } else {
             LazyVerticalGrid(
                 columns = GridCells.Fixed(2),
-                horizontalArrangement = Arrangement.spacedBy(30.dp),
+                horizontalArrangement = Arrangement.spacedBy(26.dp),
                 verticalArrangement = Arrangement.spacedBy(26.dp),
                 contentPadding = PaddingValues(top = 22.dp, bottom = 40.dp),
             ) {
                 items(books, key = { book -> book.id }) { book ->
-                    Column {
+                    Column(modifier = Modifier.fillMaxWidth()) {
                         PhysicalBookCover(
                             uriString = book.uriString,
                             title = book.title,
                             type = book.type,
-                            elevation = 16.dp,
+                            elevation = 18.dp,
                             modifier = Modifier
-                                .fillMaxWidth(0.88f)
+                                .fillMaxWidth()
                                 .clickable { onOpenBook(book) },
                         )
                         Spacer(modifier = Modifier.height(9.dp))
@@ -610,14 +627,14 @@ private fun SearchTab(
             contentPadding = PaddingValues(bottom = 40.dp),
         ) {
             items(books, key = { result -> result.id }) { result ->
-                Column {
+                Column(modifier = Modifier.fillMaxWidth()) {
                     PhysicalBookCover(
                         uriString = result.uriString.orEmpty(),
                         title = result.title,
                         type = result.documentType ?: DocumentType.TXT,
-                        elevation = 16.dp,
+                        elevation = 18.dp,
                         modifier = Modifier
-                            .fillMaxWidth(0.88f)
+                            .fillMaxWidth()
                             .clickable { onOpenResult(result) },
                     )
                     Spacer(modifier = Modifier.height(9.dp))
@@ -654,7 +671,7 @@ private fun AppleHeader(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(top = 18.dp, bottom = 10.dp),
+                .padding(top = 22.dp, bottom = 10.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
@@ -677,8 +694,11 @@ private fun AppleHeader(
 @Composable
 private fun ProfileAvatar(onClick: () -> Unit) {
     val context = LocalContext.current
-    var uriString by remember { mutableStateOf(AvatarStore.get(context)) }
-    var bitmap by remember { mutableStateOf<ImageBitmap?>(null) }
+    var uriString by remember { mutableStateOf(AvatarStore.getUriString(context)) }
+    // seed from the process-level cache so switching tabs never flickers
+    var bitmap by remember(uriString) {
+        mutableStateOf(AvatarStore.cached(uriString)?.asImageBitmap())
+    }
 
     val picker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia(),
@@ -690,16 +710,14 @@ private fun ProfileAvatar(onClick: () -> Unit) {
     }
 
     LaunchedEffect(uriString) {
-        val value = uriString
-        bitmap = if (value == null) {
-            null
-        } else {
-            withContext(Dispatchers.IO) {
-                runCatching {
-                    context.contentResolver.openInputStream(Uri.parse(value))?.use { input ->
-                        BitmapFactory.decodeStream(input)?.asImageBitmap()
-                    }
-                }.getOrNull()
+        if (bitmap == null) {
+            val value = uriString
+            bitmap = if (value == null) {
+                null
+            } else {
+                withContext(Dispatchers.IO) {
+                    AvatarStore.load(context, value)?.asImageBitmap()
+                }
             }
         }
     }

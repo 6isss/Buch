@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -40,14 +41,15 @@ import androidx.compose.foundation.layout.aspectRatio
 import app.areada.data.cover.BookCoverRepository
 import app.areada.data.reader.DocumentType
 
-/** Shared hardcover shape: 1 : 1.45 board with a very subtle 3dp radius. */
-internal val HardcoverShape = RoundedCornerShape(3.dp)
+/** Shared hardcover shape: 1 : 1.45 board with softly rounded 4dp corners. */
+internal val HardcoverShape = RoundedCornerShape(4.dp)
 internal const val HARDCOVER_RATIO = 1f / 1.45f
 
 /**
- * Realistic hardcover treatment used for every cover in the app: tight board,
- * hinge crease 6% in from the left, soft top-left ambient light and a drop
- * shadow tinted with the artwork's own dominant colour.
+ * Realistic hardcover treatment used for every cover in the app, modelled on a
+ * photographed blank hardback: rounded board, a hinge groove with a bright
+ * highlight strip either side of it, fine bevels on all four edges, a soft
+ * top-left sheen and a floating drop shadow tinted by the artwork.
  */
 @Composable
 fun PhysicalBookCover(
@@ -55,7 +57,7 @@ fun PhysicalBookCover(
     title: String,
     type: DocumentType,
     modifier: Modifier = Modifier,
-    elevation: Dp = 14.dp,
+    elevation: Dp = 16.dp,
 ) {
     val context = LocalContext.current
     var bitmap by remember(uriString) { mutableStateOf<Bitmap?>(BookCoverRepository.cached(uriString)) }
@@ -74,97 +76,110 @@ fun PhysicalBookCover(
         label = "coverAppear",
     )
 
-    Box(
-        modifier = modifier
-            .aspectRatio(HARDCOVER_RATIO)
-            .shadow(
-                elevation = elevation,
-                shape = HardcoverShape,
-                ambientColor = tint.copy(alpha = 0.9f),
-                spotColor = tint.copy(alpha = 0.9f),
-            )
-            .clip(HardcoverShape)
-            .background(MaterialTheme.colorScheme.surfaceVariant),
-    ) {
-        val image = bitmap
-        if (image != null) {
-            Image(
-                bitmap = image.asImageBitmap(),
-                contentDescription = title,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .alpha(appeared),
-            )
-        } else {
-            GeneratedCover(title = title, tint = fallbackTint)
-        }
-
-        // left board edge: dark falls off towards the centre
-        Box(
-            modifier = Modifier
-                .fillMaxHeight()
-                .fillMaxWidth(0.06f)
-                .background(
-                    Brush.horizontalGradient(
-                        listOf(
-                            Color.Black.copy(alpha = 0.25f),
-                            Color.Black.copy(alpha = 0.08f),
-                            Color.Transparent,
-                        ),
-                    ),
-                ),
-        )
-
-        // hinge crease line 6% in, with a faint highlight band just right of it
-        Box(
-            modifier = Modifier
-                .fillMaxHeight()
-                .fillMaxWidth(0.16f)
-                .background(
-                    Brush.horizontalGradient(
-                        0.00f to Color.Transparent,
-                        0.36f to Color.Transparent,
-                        0.38f to Color.Black.copy(alpha = 0.15f),
-                        0.40f to Color.White.copy(alpha = 0.10f),
-                        1.00f to Color.Transparent,
-                    ),
-                ),
-        )
-
-        // thin fore-edge page sliver
-        Box(
-            modifier = Modifier
-                .align(Alignment.CenterEnd)
-                .fillMaxHeight()
-                .width(2.dp)
-                .background(
-                    Brush.horizontalGradient(
-                        listOf(
-                            Color.Black.copy(alpha = 0.10f),
-                            Color.White.copy(alpha = 0.38f),
-                            Color(0x40786E64),
-                        ),
-                    ),
-                ),
-        )
-
-        // soft ambient light scattered across the top-left
+    Box(modifier = modifier.aspectRatio(HARDCOVER_RATIO)) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(
-                    Brush.linearGradient(
-                        colors = listOf(
-                            Color.White.copy(alpha = 0.15f),
-                            Color.Transparent,
-                            Color.Transparent,
+                .shadow(
+                    elevation = elevation,
+                    shape = HardcoverShape,
+                    ambientColor = tint.copy(alpha = 0.55f),
+                    spotColor = tint.copy(alpha = 0.85f),
+                )
+                .clip(HardcoverShape)
+                .background(MaterialTheme.colorScheme.surfaceVariant),
+        ) {
+            val image = bitmap
+            if (image != null) {
+                Image(
+                    bitmap = image.asImageBitmap(),
+                    contentDescription = title,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .alpha(appeared),
+                )
+            } else {
+                GeneratedCover(title = title, tint = fallbackTint)
+            }
+
+            // spine band: narrow dark hinge groove with a bright highlight on each side
+            Box(
+                modifier = Modifier
+                    .fillMaxHeight()
+                    .fillMaxWidth(0.14f)
+                    .background(
+                        Brush.horizontalGradient(
+                            0.00f to Color.Black.copy(alpha = 0.22f),
+                            0.14f to Color.White.copy(alpha = 0.30f),
+                            0.34f to Color.Black.copy(alpha = 0.26f),
+                            0.48f to Color.White.copy(alpha = 0.26f),
+                            0.72f to Color.Black.copy(alpha = 0.06f),
+                            1.00f to Color.Transparent,
                         ),
-                        start = Offset.Zero,
-                        end = Offset.Infinite,
                     ),
-                ),
-        )
+            )
+
+            // fore-edge page sliver on the right
+            Box(
+                modifier = Modifier
+                    .align(Alignment.CenterEnd)
+                    .fillMaxHeight()
+                    .width(2.5.dp)
+                    .background(
+                        Brush.horizontalGradient(
+                            listOf(
+                                Color.Black.copy(alpha = 0.10f),
+                                Color.White.copy(alpha = 0.34f),
+                                Color(0x40786E64),
+                            ),
+                        ),
+                    ),
+            )
+
+            // fine bevel along the top edge
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .fillMaxWidth()
+                    .height(1.5.dp)
+                    .background(
+                        Brush.verticalGradient(
+                            listOf(Color.White.copy(alpha = 0.28f), Color.Transparent),
+                        ),
+                    ),
+            )
+
+            // fine bevel along the bottom edge
+            Box(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .fillMaxWidth()
+                    .height(2.dp)
+                    .background(
+                        Brush.verticalGradient(
+                            listOf(Color.Transparent, Color.Black.copy(alpha = 0.22f)),
+                        ),
+                    ),
+            )
+
+            // soft sheen across the board, brightest at the top left
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        Brush.linearGradient(
+                            colors = listOf(
+                                Color.White.copy(alpha = 0.16f),
+                                Color.White.copy(alpha = 0.04f),
+                                Color.Transparent,
+                            ),
+                            start = Offset.Zero,
+                            end = Offset.Infinite,
+                        ),
+                    ),
+            )
+        }
     }
 }
 

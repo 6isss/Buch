@@ -31,6 +31,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
+/** Nearly square outer frame of the hero card. */
+private val HeroFrameShape = RoundedCornerShape(4.dp)
+
 /**
  * The 3D open-book hero: two white pages side by side, a central spine crease,
  * curved outer page edges, a thin page stack and a warm shadow underneath.
@@ -50,19 +53,19 @@ fun OpenBookCard(
             .aspectRatio(1.38f)
             .shadow(
                 elevation = 22.dp,
-                shape = RoundedCornerShape(14.dp),
+                shape = HeroFrameShape,
                 ambientColor = Color.Black.copy(alpha = 0.18f),
                 spotColor = Color.Black.copy(alpha = 0.22f),
             )
-            .clip(RoundedCornerShape(14.dp))
+            .clip(HeroFrameShape)
             .background(
                 Brush.verticalGradient(
                     listOf(Color(0xFF2B2B30), Color(0xFF17171A)),
                 ),
             )
-            .border(1.dp, Color(0xCC262626), RoundedCornerShape(14.dp))
+            .border(0.35.dp, Color(0xCC262626), HeroFrameShape)
             .clickable(onClick = onClick)
-            .padding(horizontal = 12.dp, vertical = 12.dp),
+            .padding(horizontal = 15.dp, vertical = 9.dp),
     ) {
         Row(modifier = Modifier.fillMaxSize()) {
             BookPage(
